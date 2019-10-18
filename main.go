@@ -9,7 +9,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/russross/blackfriday"
+	//"github.com/russross/blackfriday"
+	"github.com/google/go-github/github"
 )
 
 func main() {
@@ -82,3 +83,16 @@ func makebody(filename string, ext string) (string, error) { //{{{
 	return body, nil
 
 } //}}}
+
+func renderWithGitHub(md []byte) ([]byte, error) {
+	client := github.NewClient(nil)
+	opt := &github.MarkdownOptions{
+		Mode: "gfm", Context: "google/go-github"
+	}
+	body, _, err := client.Markdown(
+		context.Background(),
+		string(md),
+		opt
+	)
+	return []byte(body), err
+}
