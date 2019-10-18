@@ -126,7 +126,7 @@
 
 * [mathjax/MathJax](https://github.com/mathjax/MathJax)
 
-* [google/go-github]("github.com/google/go-github/github")
+* [google/go-github/]("github.com/google/go-github/github")
 
 
 

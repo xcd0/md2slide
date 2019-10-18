@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -78,7 +79,9 @@ func makebody(filename string, ext string) (string, error) { //{{{
 		return "", err
 	}
 
-	body := string(blackfriday.MarkdownBasic(md))
+	//body := string(blackfriday.MarkdownBasic(md))
+	bytebody, _ := renderWithGitHub(md)
+	body := string(bytebody)
 
 	return body, nil
 
@@ -86,13 +89,7 @@ func makebody(filename string, ext string) (string, error) { //{{{
 
 func renderWithGitHub(md []byte) ([]byte, error) {
 	client := github.NewClient(nil)
-	opt := &github.MarkdownOptions{
-		Mode: "gfm", Context: "google/go-github"
-	}
-	body, _, err := client.Markdown(
-		context.Background(),
-		string(md),
-		opt
-	)
+	opt := &github.MarkdownOptions{Mode: "gfm", Context: "google/go-github"}
+	body, _, err := client.Markdown(context.Background(), string(md), opt)
 	return []byte(body), err
 }
