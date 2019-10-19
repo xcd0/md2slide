@@ -1,8 +1,18 @@
 
+BIN=md2html_bin
+
 build:
-	go build
+	go build -o $(BIN)
 
 run: build
-	go run main.go README.md
+	./$(BIN) README.md
+
+test: build
+	go run test/test.go README.md
 
 all: build
+
+
+clean:
+	rm *.html
+

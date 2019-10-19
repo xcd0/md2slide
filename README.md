@@ -139,3 +139,14 @@
 |2019/10/19	|1		|新規作成				|
 
 
+## Mathjax
+
+* ` $$ \frac{\partial u}{\partial t} = \kappa \frac{\partial^2 u}{\partial x^2} $$ `
+
+$$ \frac{\partial u}{\partial t} = \kappa \frac{\partial^2 u}{\partial x^2} $$
+
+* ` \\( \frac{\partial u}{\partial t} = \kappa \frac{\partial^2 u}{\partial x^2} \\) `
+
+\\( \frac{\partial u}{\partial t} = \kappa \frac{\partial^2 u}{\partial x^2} \\)
+
+

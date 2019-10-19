@@ -1,11 +1,13 @@
-hugo
-hugo.exe
+
+md2html_bin
+
+*.html
+*.log
+*.txt
+
 *.tar.*
 *.zip
 *.zip.*
-
-*.log
-*.txt
 
 *~
 *.swp
