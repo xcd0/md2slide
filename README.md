@@ -4,8 +4,12 @@
 
 マークダウンからプレゼンテーション用の資料を生成します。
 
+
+## Motivation
+
 従来の[Marp](https://yhatt.github.io/marp/) はそれなりの可搬性がありました。  
-しかし、新しく作り直されている[Marp Next](https://github.com/marp-team/marp/#readme)は現状CLIのものだけであり、可搬性が乏しいです。  
+しかし、新しく作り直されている[Marp Next](https://github.com/marp-team/marp/#readme)は
+今のところCUIのもので、現状可搬性が乏しいです。  
 発表する際、直前になって修正というシチュエーションもあり、  
 可搬性を重視してGolangで実装します。  
 またスライドの比率変更やプレゼンテーション発表時に使用する  
@@ -122,11 +126,16 @@
 付近のボタンを押下することで任意のブラウザで表示する。
 
 
-# See Also
+## See Also
 
 * [mathjax/MathJax](https://github.com/mathjax/MathJax)
 
-* [google/go-github/]("github.com/google/go-github/github")
+* [google/go-github](https://github.com/google/go-github/github)
 
+## History
+
+|改定日		|版		|内容					|
+|:---:|:---:|:---:|
+|2019/10/19	|1		|新規作成				|
 
 
