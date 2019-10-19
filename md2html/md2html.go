@@ -1,8 +1,8 @@
 package md2html
 
 import ( // {{{
-	"bufio"
-	"bytes"
+	//"bufio"
+	//"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,8 +13,8 @@ import ( // {{{
 
 	"github.com/google/go-github/github"
 	"github.com/russross/blackfriday"
+	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/xcd0/go-nkf"
-	"github.com/yuin/goldmark"
 ) // }}}
 
 type Fileinfo struct { // {{{
@@ -114,7 +114,7 @@ func makebody(fi Fileinfo) (string, error) { //{{{
 	var bytebody []byte
 	if fi.Flavor == "github" {
 		bytebody, err = renderWithGitHub(bytemd)
-	} else if fi.Flavor == "gm" {
+	} else if fi.Flavor == "gfm" {
 		bytebody, err = makeGFM(bytemd)
 	} else {
 		bytebody = blackfriday.MarkdownBasic(bytemd)
@@ -140,14 +140,9 @@ func renderWithGitHub(md []byte) ([]byte, error) { // {{{
 
 func makeGFM(md []byte) ([]byte, error) { // {{{
 
-	var buffer bytes.Buffer
+	bytehtml := github_flavored_markdown.Markdown(md)
 
-	w := bufio.NewWriter(&buffer)
-	if err := goldmark.Convert(md, &buffer); err != nil {
-		return nil, err
-	}
-
-	_, err = w.Write(buffer.Bytes())
-
-	return []byte(w), err
+	return bytehtml, nil
 }
+
+// }}}

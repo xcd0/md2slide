@@ -30,14 +30,14 @@ func main() {
 	}
 
 	{
-		fi.Flavor = "gm"
+		fi.Flavor = "gfm"
 		// htmlを作成する
 		html, err := md2html.Makehtml(fi)
 		if err != nil {
 			os.Exit(1)
 		}
 
-		htmlpath := fi.Dpath + "/" + fi.Basename + "_goldmark.html"
+		htmlpath := fi.Dpath + "/" + fi.Basename + "_gfm.html"
 
 		err = ioutil.WriteFile(htmlpath, []byte(html), 0644)
 		if err != nil {
