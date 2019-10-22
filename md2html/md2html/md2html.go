@@ -11,29 +11,31 @@ import ( // {{{
 
 	"github.com/google/go-github/github"
 	"github.com/russross/blackfriday"
-	"github.com/shurcooL/github_flavored_markdown"
+	gfm "github.com/shurcooL/github_flavored_markdown"
 	"github.com/xcd0/go-nkf"
 ) // }}}
 
 type Fileinfo struct { // {{{
-	Apath    string
-	Dpath    string
-	Filename string
-	Basename string
-	Ext      string
-	Htmlpath string
-	Flavor   string
+	Apath    string // 入力mdファイルの絶対パス
+	Dpath    string // 入力mdファイルのあるディレクトリのパス
+	Filename string // 入力mdファイルのファイル名
+	Basename string // 入力mdファイルのベースネーム 拡張子抜きの名前
+	Ext      string // 入力mdファイルの拡張子
+	Htmlpath string // 生成されるhtmlファイルの出力先パス
+	Flavor   string // 生成に用いるmarkdownの方言
+	Html     string // 生成したhtml本体が入る
+	Pdfpath  string // 生成されるpdfファイルの出力先パス
 } // }}}
 
 func Makehtml(fi Fileinfo) (string, error) { // {{{
 
-	header := makeheader()
-	body, err := makebody(fi)
-	footer := makefooter()
+	header := Makeheader()
+	body, err := Makebody(fi)
+	footer := Makefooter()
 
-	html := header + body + footer
+	fi.Html = header + body + footer
 
-	return html, err
+	return fi.Html, err
 } // }}}
 
 func Argparse(arg string) Fileinfo { // {{{
@@ -49,12 +51,12 @@ func Argparse(arg string) Fileinfo { // {{{
 	// 拡張子なしの名前を得る
 	fi.Basename = fi.Filename[:len(fi.Filename)-len(fi.Ext)]
 	// 出力するhtmlのパスを得る
-	fi.Htmlpath = fi.Dpath + "/" + fi.Basename + ".html"
+	fi.Htmlpath = fi.Dpath + fi.Basename + ".html"
 
 	return fi
 } // }}}
 
-func makeheader() string { // {{{
+func Makeheader() string { // {{{
 	header := `<!DOCTYPE html>
 <html>
 <head>
@@ -83,7 +85,7 @@ body{font-family:Helvetica,arial,sans-serif;font-size:14px;line-height:1.8;paddi
 	return header
 } // }}}
 
-func makebody(fi Fileinfo) (string, error) { //{{{
+func Makebody(fi Fileinfo) (string, error) { //{{{
 
 	if fi.Ext != ".md" {
 		fmt.Println("拡張子が.mdではありません")
@@ -128,9 +130,9 @@ func makebody(fi Fileinfo) (string, error) { //{{{
 
 	var bytebody []byte
 	if fi.Flavor == "github" {
-		bytebody, err = renderWithGitHub(bytemd)
+		bytebody, err = gitHubAPI(bytemd)
 	} else if fi.Flavor == "gfm" {
-		bytebody, err = makeGFM(bytemd)
+		bytebody, err = shurcooL_GFM(bytemd)
 	} else {
 		bytebody = blackfriday.MarkdownBasic(bytemd)
 	}
@@ -141,21 +143,21 @@ func makebody(fi Fileinfo) (string, error) { //{{{
 
 } //}}}
 
-func makefooter() string { // {{{
+func Makefooter() string { // {{{
 	footer := "</body>\n</html>"
 	return footer
 } // }}}
 
-func renderWithGitHub(md []byte) ([]byte, error) { // {{{
+func gitHubAPI(md []byte) ([]byte, error) { // {{{
 	client := github.NewClient(nil)
 	opt := &github.MarkdownOptions{Mode: "gfm", Context: "google/go-github"}
 	body, _, err := client.Markdown(context.Background(), string(md), opt)
 	return []byte(body), err
 } // }}}
 
-func makeGFM(md []byte) ([]byte, error) { // {{{
+func shurcooL_GFM(md []byte) ([]byte, error) { // {{{
 
-	bytehtml := github_flavored_markdown.Markdown(md)
+	bytehtml := gfm.Markdown(md)
 
 	return bytehtml, nil
 }
