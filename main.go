@@ -1,132 +1,134 @@
 package main
 
 import ( // {{{
-	"bufio"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"regexp"
+	//"log"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
-
-	"./html2pdf"
-	"./md2html/md2html"
+	"sync"
+	//"text/template"
 ) // }}}
 
 func main() {
 	flag.Parse()
 	// 第一引数にマークダウンのファイルのパスを受け取る
 	// 引数を元に構造体を作る
-	fi := md2html.Argparse(flag.Arg(0))
+	fi := Argparse(flag.Arg(0))
 
-	// そのまま印刷したら単純な文書になる印刷用htmlを出力
-	makeHtmlByShurcooL(fi)
+	// wg4searchが終わるのを待ってwgをすすめる
+	wg := sync.WaitGroup{}
 
-	// 単純に生成した印刷用htmlをスライド用htmlにする
-	makeHtmlForSlide(fi)
+	// 画像を探す
+	searchTargetFile(&fi)
+
+	// そのまま印刷したら単純な文書になる印刷用htmlを作成する 出力はしない
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		//fmt.Println("call : makeHtmlNP")
+		makeHtml(&fi)
+	}()
+
+	// スライド用htmlを生成する
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		//fmt.Println("call : MakePdfForSlideNP")
+		MakePdfForSlide(&fi)
+	}()
+
+	wg.Wait()
 
 	// pdfをつくる
-	fi.Pdfpath = fi.Dpath + fi.Basename + ".pdf"
-	html2pdf.Html2pdf(fi)
+	/*
+		fi.Pdfpath = fi.Dpath + fi.Basename + ".pdf"
+		html2pdf.Html2pdf(fi)
+	*/
 }
 
-func makeHtmlByShurcooL(fi md2html.Fileinfo) { // {{{
+func makeHtml(fi *Fileinfo) { // {{{
 
-	fi.Flavor = "gfm"
+	fi.Html = Makeheader(*fi, "") + Makebody(fi.Apath, fi.RImgPath) + Makefooter()
 
-	// htmlを作成する
-	html, err := md2html.Makehtml(fi)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	err = ioutil.WriteFile(fi.Htmlpath, []byte(html), 0644)
+	// 印刷用htmlを出力する
+	err := ioutil.WriteFile(fi.Htmlpath, []byte(fi.Html), 0644)
 	if err != nil {
 		// Openエラー処理
 		fmt.Fprintf(os.Stderr, "File %s could not open : %v\n", fi.Htmlpath, err)
-		fmt.Println(err)
-		return
+		//fmt.Println(err)
+		panic(err)
 	}
 
 } // }}}
 
-func makeHtmlForSlide(fi md2html.Fileinfo) {
+func filter2body(in string) string { // {{{1
 
-	header := Makeheader()
-	body, err := Makebody(fi)
-	footer := Makefooter()
+	lines := strings.Split(in, "\n")
 
-	fi.Html = header + body + footer
+	// 独自置換対象文字列
+	var rep [][]string
+	rep = append(rep, []string{`^===$`, "\n<div style='page-break-before:always'></div>\n"})
 
-	js := `<!--{{{-->
-<style>
-
-<script type="text/javascript">
-	document.onkeydown = keydown;
-
-function keydown() {
-	target.innerHTML = "キーが押されました KeyCode :" + event.keyCode;
-
-	if (event.keyCode == 37) {
-		/*左*/
-	}
-	else {
-	}
-	if (event.keyCode == 39) {
-		/*右*/
-	}
-	else {
-	}
-	document.getElementById( "slider-main" ).onclick = function( event ) {
-		var x = event.pageX ;	// 水平の位置座標
-		var obj = document.getElementById("slide-main");
-		var w = obj.getBoundingClientRect().width;
-		console.log(w);
-		if ( x < w / 2  ) {
-			/*左*/
-		}else{
-			/*右*/
+	output := ""
+	for _, r := range rep { // 全ての置換対象文字列について回す
+		reg := regexp.MustCompile(r[0])
+		for _, line := range lines { // 一行ずつ
+			output += reg.ReplaceAllString(line, r[1]) + "\n"
 		}
 	}
-}
-</script>
-<!--}}}-->
-`
+	// 上書きする
+	return output
 
-	// 置換対象文字列
-	targetArray := [][]string{
-		{"</head>", "\n</head>"},
-		{"<body>", "\n<body>"},
-		{"</body>", "\n</body>"},
-		{"<!-- pb -->", "</div>\n<hr id=\"pb\">\n<div id=\"child\">"},
+} // }}}1
+
+func sortStirngsLen(in []string) []string { // {{{
+
+	type imgPath struct {
+		path   string
+		length int
 	}
 
-	// これが出力される
-	output, err := replace(f, targetArray)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "File %s couldn't create. : %v\n", fi.Htmlpath, err)
-		return
+	lengthCount := make([]imgPath, len(in))
+	for i, str := range in {
+		lengthCount[i] = imgPath{path: str, length: len(str)}
 	}
 
-	htmlpath = fi.Dpath + fi.hasename + "_slide.html"
-	err = ioutil.WriteFile(htmlpath, []byte(output), 0644)
-	if err != nil {
-		// Openエラー処理
-		fmt.Fprintf(os.Stderr, "File %s could not create. : %v\n", htmlpath, err)
-		fmt.Println(err)
-		return
+	// 大きい順に並べる
+	sort.Slice(lengthCount, func(i, j int) bool { return lengthCount[i].length > lengthCount[j].length })
+
+	out := make([]string, len(in))
+	for i := 0; i < len(in); i++ {
+		out[i] = lengthCount[i].path
 	}
+	return out
+} // }}}
 
-}
+func searchTargetFile(fi *Fileinfo) { // {{{1
+	//fmt.Println("searchTargetFile")
 
-func replace(input, targetArray [][]string) (string, error) {
+	outputList := []string{}
 
-	lines := strings.Split(input, "\n")
+	filepath.Walk(fi.Dpath, func(path string, _ os.FileInfo, _ error) error {
+		// 相対パスを取得
+		relativePath, _ := filepath.Rel(fi.Dpath, path)
 
-	// 全ての置換対象文字列について回す
-	for i := 0; i < len(targetArray); i++ {
+		// jpg,jpeg,png,gif
+		ext := filepath.Ext(relativePath)
+		if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
+			//fmt.Println(relativePath)
+			outputList = append(outputList, relativePath)
+		}
+		return nil
+	})
 
-	output := strings.NewRreplacer(
-	).Replace(lines)
+	// これを文字列の長い順に並び変える
+	// でないと浅い階層に同じ名前のファイルがある場合誤った置換が発生する
+	outputList = sortStirngsLen(outputList)
 
-}
+	fi.RImgPath = outputList
+} // }}}1

@@ -1,13 +1,16 @@
 
-md2html_bin
-
-*.html
-*.log
-*.txt
-
+*.exe
 *.tar.*
 *.zip
 *.zip.*
+*.log
+*.txt
+
+test/.tmp
+test/dtm
+build/*
+build_ori/*
+*.mini.css
 
 *~
 *.swp
